@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: k8s-manager-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - IN_CLUSTER=false
+      - KUBECONFIG_PATH=/root/.kube/config
+      - DATABASE_URL=sqlite:///./k8s_manager.db
+      - DEBUG=false
+    volumes:
+      - ~/.kube/config:/root/.kube/config:ro
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - k8s-manager
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: k8s-manager-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - k8s-manager
+
+networks:
+  k8s-manager:
+    driver: bridge
